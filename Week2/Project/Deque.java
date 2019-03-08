@@ -28,8 +28,8 @@ public class Deque<Item> implements Iterable<Item> {
         }
     }
 
-    Node m_sentinelNode;
-    int m_size;
+    private Node m_sentinelNode;
+    private int m_size;
 
     public Deque() {
         m_sentinelNode = new Node(null);
@@ -52,7 +52,7 @@ public class Deque<Item> implements Iterable<Item> {
         return m_sentinelNode.m_prev;
     }
 
-    public void addWhenEmpty(final Node node) {
+    private void addWhenEmpty(final Node node) {
 
         m_sentinelNode.m_next = node;
         m_sentinelNode.m_prev = node;
@@ -111,8 +111,12 @@ public class Deque<Item> implements Iterable<Item> {
         Item res = curFront.m_item;
 
         m_sentinelNode.m_next = curFront.m_next;
-        curFront.m_prev.m_prev = m_sentinelNode;
-
+        if (curFront.m_next != null)
+            curFront.m_next.m_prev = m_sentinelNode;
+        if (m_size == 1) {
+            m_sentinelNode.m_next = null;
+            m_sentinelNode.m_prev = null;
+        }
         curFront = null;
 
         m_size--;
@@ -126,8 +130,12 @@ public class Deque<Item> implements Iterable<Item> {
         Item res = curBack.m_item;
 
         m_sentinelNode.m_prev = curBack.m_prev;
-        curBack.m_prev.m_next = m_sentinelNode;
-
+        if (curBack.m_prev != null)
+            curBack.m_prev.m_next = m_sentinelNode;
+        if (m_size == 1) {
+            m_sentinelNode.m_next = null;
+            m_sentinelNode.m_prev = null;
+        }
         curBack = null;
 
         m_size--;
@@ -145,12 +153,12 @@ public class Deque<Item> implements Iterable<Item> {
 
         @Override
         public boolean hasNext() {
-            return ((m_current != m_sentinelNode));
+            return ((m_current != m_sentinelNode) && (m_current != null));
         }
 
         @Override
         public Item next() {
-            if (m_current == null) {
+            if (!hasNext()) {
                 throw new NoSuchElementException("End of the queue");
             }
             Item res = m_current.m_item;
@@ -166,11 +174,11 @@ public class Deque<Item> implements Iterable<Item> {
 
     public static void main(String[] args) {
         Deque<Integer> test = new Deque<Integer>();
-        for (int i = 1; i < 11; i++)
-            test.addFirst(i);
-        for (int i = 1; i < 11; i++)
-            StdOut.println(test.removeLast());
-        
+        test.addFirst(1);
+        test.removeLast();
+        for (Integer i : test) {
+            StdOut.println(i);
+        }
     }
 
 }
