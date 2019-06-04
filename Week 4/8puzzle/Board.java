@@ -5,16 +5,13 @@
  **************************************************************************** */
 
 
+import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.Stack;
-import edu.princeton.cs.algs4.StdRandom;
 
 public final class Board {
     private final int[][] tiles;
-    private int zeroIndex;
     private final int size;
-    private final int hamming;
-    private final int manhattan;
-    private final boolean bIsGoal;
+    private int manhattan;
 
     public Board(int[][] blocks)            // construct a tiles from an n-by-n array of blocks
     // (where blocks[i][j] = block in row i, column j)
@@ -23,40 +20,10 @@ public final class Board {
         tiles = new int[size][size];
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
-                if (blocks[i][j] == 0) zeroIndex = i * size + j;
                 tiles[i][j] = blocks[i][j];
             }
         }
-        hamming = calculateHamming();
         manhattan = calculateManhattan();
-        bIsGoal = calculateIsGoal();
-    }
-
-    private boolean calculateIsGoal() {
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                if (tiles[i][j] == 0) continue;
-                if (!((tiles[i][j] - 1) == i * size + j)) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    private int calculateHamming() {
-        int res = 0;
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                if (tiles[i][j] == 0) continue;
-                int col = (tiles[i][j] - 1) % size;
-                int row = (tiles[i][j] - 1) / size;
-                if (!(i == row && j == col)) {
-                    res++;
-                }
-            }
-        }
-        return res;
     }
 
     private int calculateManhattan() {
@@ -75,10 +42,11 @@ public final class Board {
         return res;
     }
 
-    private void exch(int[][] tiles, int sCol, int sRow, int eCol, int eRow) {
-        int temp = tiles[sCol][sRow];
-        tiles[sCol][sRow] = tiles[eCol][eRow];
-        tiles[eCol][eRow] = temp;
+    private void exch(int[][] other, int sCol, int sRow, int eCol, int eRow) {
+        int temp = other[sRow][sCol];
+        other[sRow][sCol] = other[eRow][eCol];
+        other[eRow][eCol] = temp;
+        manhattan = calculateManhattan();
     }
 
     private boolean isInBound(int indexCol, int indexRow) {
@@ -94,7 +62,20 @@ public final class Board {
 
     public int hamming()                   // number of blocks out of place
     {
-        return hamming;
+        int res = 0;
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                if (tiles[i][j] == 0) {
+                    continue;
+                }
+                int col = (tiles[i][j] - 1) % size;
+                int row = (tiles[i][j] - 1) / size;
+                if (!(i == row && j == col)) {
+                    res++;
+                }
+            }
+        }
+        return res;
     }
 
     public int manhattan()                 // sum of Manhattan distances between blocks and goal
@@ -104,23 +85,47 @@ public final class Board {
 
     public boolean isGoal()                // is this tiles the goal tiles?
     {
-        return bIsGoal;
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                if (tiles[i][j] == 0) {
+                    if (i != size - 1 || j != size - 1) {
+                        return false;
+                    }
+                    continue;
+                }
+                if (!((tiles[i][j] - 1) == i * size + j)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     public Board twin()                    // a tiles that is obtained by exchanging any pair of blocks
     {
-        Board res = new Board(tiles);
-        int swapS = zeroIndex, swapE = zeroIndex;
-        while (swapS == zeroIndex)
-            swapS = StdRandom.uniform(0, size * size);
-        while (swapE == zeroIndex)
-            swapE = StdRandom.uniform(0, size * size);
-        int sCol = swapS % size;
-        int sRow = swapS / size;
-        int eCol = swapE % size;
-        int eRow = swapE / size;
-        exch(res.tiles, sCol, sRow, eCol, eRow);
-        return res;
+        int[][] newTiles = new int[size][size];
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                newTiles[i][j] = tiles[i][j];
+            }
+        }
+        int startR, startC, endR, endC;
+        if (newTiles[0][0] != 0 && newTiles[0][1] != 0) {
+            startR = 0;
+            startC = 0;
+            endR = 0;
+            endC = 1;
+        }
+        else {
+            startR = 1;
+            startC = 0;
+            endR = 1;
+            endC = 1;
+        }
+        int temp = newTiles[startR][startC];
+        newTiles[startR][startC] = newTiles[endR][endC];
+        newTiles[endR][endC] = temp;
+        return new Board(newTiles);
     }
 
     public boolean equals(Object y)        // does this tiles equal y?
@@ -145,8 +150,15 @@ public final class Board {
     public Iterable<Board> neighbors()     // all neighboring boards
     {
         Stack<Board> res = new Stack<>();
-        int zeroRow = zeroIndex / size;
-        int zeroCol = zeroIndex % size;
+        int zeroRow = -1;
+        int zeroCol = -1;
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++)
+                if (tiles[i][j] == 0) {
+                    zeroRow = i;
+                    zeroCol = j;
+                }
+        }
         final int[] delta = { 1, -1 };
         for (final int i : delta) {
             if (isInBound(zeroCol + i, zeroRow)) {
@@ -154,8 +166,6 @@ public final class Board {
                 in.exch(in.tiles, zeroCol, zeroRow, zeroCol + i, zeroRow);
                 res.push(in);
             }
-        }
-        for (final int i : delta) {
             if (isInBound(zeroCol, zeroRow + i)) {
                 Board in = new Board(tiles);
                 in.exch(in.tiles, zeroCol, zeroRow, zeroCol, zeroRow + i);
@@ -180,12 +190,39 @@ public final class Board {
 
     public static void main(String[] args) // unit tests (not graded)
     {
-        int[][] blocks = { { 1, 2, 3 }, { 4, 0, 6 }, { 7, 8, 5 } };
-        Board b = new Board(blocks);
-        Iterable<Board> it = b.neighbors();
-        for (Board a : it) {
-            System.out.println(a);
-        }
+        for (String filename : args) {
+            // read in the board specified in the filename
+            In in = new In(filename);
+            int n = in.readInt();
+            int[][] tiles = new int[n][n];
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < n; j++) {
+                    tiles[i][j] = in.readInt();
+                }
+            }
 
+            // solve the slider puzzle
+            Board initial = new Board(tiles);
+            int size = 0;
+            System.out.println("//////////////////");
+            System.out.println(initial);
+            System.out.println("//////////////////");
+            for (Board b : initial.neighbors()) {
+                System.out.println("Neighbors:");
+                System.out.println(b);
+                size++;
+            }
+            System.out.println("Total neighbors:" + size);
+            System.out.println("//////////////////");
+            System.out.println("Twin1");
+            System.out.println(initial.twin());
+            System.out.println("Twin2");
+            System.out.println(initial.twin());
+            System.out.println("Twin3");
+            System.out.println(initial.twin());
+            System.out.println("Twin4");
+            System.out.println(initial.twin());
+
+        }
     }
 }
