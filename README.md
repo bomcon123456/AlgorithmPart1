@@ -1,2 +1,2 @@
-"# Algorithm part 1" 
+# Algorithm part 1
 ![grade](./images/grades.png)
